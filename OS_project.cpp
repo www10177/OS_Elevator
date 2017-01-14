@@ -10,59 +10,109 @@ std::mutex mtx_havePeople;
 std::mutex mtx_destination;
 std::mutex mtx_floor;
 
-std::condition_variable cvFloorIn[NumberOfFloors];
-std::condition_variable cvFloorOut[NumberOfFloors];
+std::condition_variable cvFloorIn_up[NumberOfFloors];
+std::condition_variable cvFloorOut_up[NumberOfFloors];
+std::condition_variable cvFloorIn_down[NumberOfFloors];
+std::condition_variable cvFloorOut_down[NumberOfFloors];
 
-bool havePeople[NumberOfFloors];
-bool destination[NumberOfFloors];
+bool havePeople_up[NumberOfFloors];
+bool destination_up[NumberOfFloors];
+bool havePeople_down[NumberOfFloors];
+bool destination_down[NumberOfFloors];
+bool upOrDown=true;//Up:true Down:false
 int nowFloor=1;
+
 std::thread th[3];
 
 void passenger(int startFloor,int endFloor,std::string name){
 
-	mtx_havePeople.lock();
-	havePeople[startFloor-1]=true;
-	std::cout<<name<<" at "<<startFloor<<" and wait elevator"<<std::endl;
-	mtx_havePeople.unlock();
+	if(startFloor<endFloor){
 
-	std::unique_lock <std::mutex> lck(mtx_floor);
-	//if(nowFloor!=startFloor){
-		cvFloorIn[startFloor-1].wait(lck);
-	//}
+		mtx_havePeople.lock();
+		havePeople_up[startFloor-1]=true;
+		std::cout<<name<<" at "<<startFloor<<" and wait elevator"<<std::endl;
+		mtx_havePeople.unlock();
 
-	mtx_destination.lock();
-	destination[endFloor-1]=true;
-	std::cout<<name<<" in and want go to "<<endFloor<<std::endl;
-	mtx_destination.unlock();
+		std::unique_lock <std::mutex> lck(mtx_floor);
+		cvFloorIn_up[startFloor-1].wait(lck);
 
-	if(nowFloor!=endFloor){
-		cvFloorOut[endFloor-1].wait(lck);
+		mtx_destination.lock();
+		destination_up[endFloor-1]=true;
+		std::cout<<name<<" in and want go to "<<endFloor<<std::endl;
+		mtx_destination.unlock();
+
+		if(nowFloor!=endFloor){
+			cvFloorOut_up[endFloor-1].wait(lck);
+		}
+		std::cout<<name<<" out!"<<std::endl;
 	}
-	std::cout<<name<<" out!"<<std::endl;
+	else{
+
+		mtx_havePeople.lock();
+		havePeople_down[startFloor-1]=true;
+		std::cout<<name<<" at "<<startFloor<<" and wait elevator"<<std::endl;
+		mtx_havePeople.unlock();
+
+		std::unique_lock <std::mutex> lck(mtx_floor);
+		cvFloorIn_down[startFloor-1].wait(lck);
+
+		mtx_destination.lock();
+		destination_down[endFloor-1]=true;
+		std::cout<<name<<" in and want go to "<<endFloor<<std::endl;
+		mtx_destination.unlock();
+
+		if(nowFloor!=endFloor){
+			cvFloorOut_down[endFloor-1].wait(lck);
+		}
+		std::cout<<name<<" out!"<<std::endl;
+	}
 }
 void the(){
 	th[0]=std::thread(passenger,1,2,"kkk");
 	th[1]=std::thread(passenger,3,4,"hhh");
-	th[2]=std::thread(passenger,4,5,"sss");
+	th[2]=std::thread(passenger,6,3,"sss");
 }
 void elevator(){
 	std::this_thread::sleep_for(std::chrono::seconds(1));
 	int i;
-	for(i=0;i<NumberOfFloors;i++){
-		std::cout<<"elevator: "<<nowFloor<<std::endl;
+	if(upOrDown==true){
+		for(i=0;i<NumberOfFloors;i++){
+			std::cout<<"elevator: "<<nowFloor<<std::endl;
 
-		mtx_havePeople.lock();mtx_destination.lock();
-		if(havePeople[nowFloor-1]==true || destination[nowFloor-1]==true){
-			cvFloorOut[nowFloor-1].notify_all();
-			cvFloorIn[nowFloor-1].notify_all();
-			havePeople[nowFloor-1]=false;
-			destination[nowFloor-1]=false;
-			std::cout<<"open door!"<<std::endl;
+			mtx_havePeople.lock();mtx_destination.lock();
+			if(havePeople_up[nowFloor-1]==true || destination_up[nowFloor-1]==true){
+				cvFloorOut_up[nowFloor-1].notify_all();
+				cvFloorIn_up[nowFloor-1].notify_all();
+				havePeople_up[nowFloor-1]=false;
+				destination_up[nowFloor-1]=false;
+				std::cout<<"open door!"<<std::endl;
+			}
+			mtx_havePeople.unlock();mtx_destination.unlock();
+
+			std::this_thread::sleep_for(std::chrono::seconds(2));
+			nowFloor++;
 		}
-		mtx_havePeople.unlock();mtx_destination.unlock();
+		upOrDown=false;
+		nowFloor-=1;
+	}
 
-		std::this_thread::sleep_for(std::chrono::seconds(2));
-		nowFloor++;
+	if(upOrDown==false){
+		for(i=0;i<NumberOfFloors;i++){
+			std::cout<<"elevator: "<<nowFloor<<std::endl;
+
+			mtx_havePeople.lock();mtx_destination.lock();
+			if(havePeople_down[nowFloor-1]==true || destination_down[nowFloor-1]==true){
+				cvFloorOut_down[nowFloor-1].notify_all();
+				cvFloorIn_down[nowFloor-1].notify_all();
+				havePeople_down[nowFloor-1]=false;
+				destination_down[nowFloor-1]=false;
+				std::cout<<"open door!"<<std::endl;
+			}
+			mtx_havePeople.unlock();mtx_destination.unlock();
+
+			std::this_thread::sleep_for(std::chrono::seconds(2));
+			nowFloor--;
+		}
 	}
 	std::cout<<"elevator end\n";
 }
@@ -70,8 +120,10 @@ void elevator(){
 int main(){
 	int i,k;
 	for(i=0;i<10;i++){
-		havePeople[i]=false;
-		destination[i]=false;
+		havePeople_up[i]=false;
+		destination_up[i]=false;
+		havePeople_down[i]=false;
+		destination_down[i]=false;
 	}
 
 	std::thread mthread(elevator);
