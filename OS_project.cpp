@@ -9,6 +9,7 @@
 std::mutex mtx_havePeople;
 std::mutex mtx_destination;
 std::mutex mtx_floor;
+std::mutex mtx_peopleCount;
 
 std::condition_variable cvFloorIn_up[NumberOfFloors];
 std::condition_variable cvFloorOut_up[NumberOfFloors];
@@ -21,10 +22,14 @@ bool havePeople_down[NumberOfFloors];
 bool destination_down[NumberOfFloors];
 bool upOrDown=true;//Up:true Down:false
 int nowFloor=1;
+int peopleCount=0;
 
-std::thread th[3];
+std::thread th[4];
 
 void passenger(int startFloor,int endFloor,std::string name){
+	mtx_peopleCount.lock();
+	peopleCount++;
+	mtx_peopleCount.unlock();
 
 	if(startFloor<endFloor){
 
@@ -66,53 +71,72 @@ void passenger(int startFloor,int endFloor,std::string name){
 		}
 		std::cout<<name<<" out!"<<std::endl;
 	}
+	mtx_peopleCount.lock();
+	peopleCount--;
+	mtx_peopleCount.unlock();
 }
 void the(){
-	th[0]=std::thread(passenger,1,2,"kkk");
-	th[1]=std::thread(passenger,3,4,"hhh");
-	th[2]=std::thread(passenger,6,3,"sss");
+	th[0]=std::thread(passenger,1,2,"p1");
+	th[1]=std::thread(passenger,3,4,"p2");
+	th[2]=std::thread(passenger,6,3,"p3");
+	th[3]=std::thread(passenger,2,3,"p4");
 }
+
 void elevator(){
 	std::this_thread::sleep_for(std::chrono::seconds(1));
-	int i;
-	if(upOrDown==true){
-		for(i=0;i<NumberOfFloors;i++){
-			std::cout<<"elevator: "<<nowFloor<<std::endl;
+	int whichFloor;
+	int j;
+	while(1){
 
-			mtx_havePeople.lock();mtx_destination.lock();
-			if(havePeople_up[nowFloor-1]==true || destination_up[nowFloor-1]==true){
-				cvFloorOut_up[nowFloor-1].notify_all();
-				cvFloorIn_up[nowFloor-1].notify_all();
-				havePeople_up[nowFloor-1]=false;
-				destination_up[nowFloor-1]=false;
-				std::cout<<"open door!"<<std::endl;
+		if(upOrDown==true){
+			for(j=nowFloor;j<=NumberOfFloors;j++){
+
+				std::cout<<"elevator: "<<nowFloor<<std::endl;
+				if(nowFloor==10){
+					std::cout<<"up end!"<<std::endl;
+				}
+
+				mtx_havePeople.lock();mtx_destination.lock();
+				if(havePeople_up[nowFloor-1]==true || destination_up[nowFloor-1]==true){
+					cvFloorOut_up[nowFloor-1].notify_all();
+					cvFloorIn_up[nowFloor-1].notify_all();
+					havePeople_up[nowFloor-1]=false;
+					destination_up[nowFloor-1]=false;
+					std::cout<<"open door!"<<std::endl;
+				}
+				mtx_havePeople.unlock();mtx_destination.unlock();
+
+				std::this_thread::sleep_for(std::chrono::seconds(2));
+				nowFloor++;
 			}
-			mtx_havePeople.unlock();mtx_destination.unlock();
-
-			std::this_thread::sleep_for(std::chrono::seconds(2));
-			nowFloor++;
 		}
-		upOrDown=false;
-		nowFloor-=1;
-	}
-
-	if(upOrDown==false){
-		for(i=0;i<NumberOfFloors;i++){
-			std::cout<<"elevator: "<<nowFloor<<std::endl;
-
-			mtx_havePeople.lock();mtx_destination.lock();
-			if(havePeople_down[nowFloor-1]==true || destination_down[nowFloor-1]==true){
-				cvFloorOut_down[nowFloor-1].notify_all();
-				cvFloorIn_down[nowFloor-1].notify_all();
-				havePeople_down[nowFloor-1]=false;
-				destination_down[nowFloor-1]=false;
-				std::cout<<"open door!"<<std::endl;
-			}
-			mtx_havePeople.unlock();mtx_destination.unlock();
-
-			std::this_thread::sleep_for(std::chrono::seconds(2));
+		if(nowFloor==11){
 			nowFloor--;
 		}
+		upOrDown=false;
+		if(upOrDown==false){
+			for(j=nowFloor-1;j>=0;j--){
+				if(nowFloor==10){
+					std::cout<<"start down"<<std::endl;
+				}
+				std::cout<<"elevator: "<<nowFloor<<std::endl;
+
+				mtx_havePeople.lock();mtx_destination.lock();
+				if(havePeople_down[nowFloor-1]==true || destination_down[nowFloor-1]==true){
+					cvFloorOut_down[nowFloor-1].notify_all();
+					cvFloorIn_down[nowFloor-1].notify_all();
+					havePeople_down[nowFloor-1]=false;
+					destination_down[nowFloor-1]=false;
+					std::cout<<"open door!"<<std::endl;
+				}
+				mtx_havePeople.unlock();mtx_destination.unlock();
+
+				std::this_thread::sleep_for(std::chrono::seconds(2));
+				nowFloor--;
+			}
+		}
+		std::cout<<"peopleCount: "<<peopleCount<<std::endl;
+		if(peopleCount==0){break;}
 	}
 	std::cout<<"elevator end\n";
 }
@@ -131,6 +155,7 @@ int main(){
 	th[0].join();
 	th[1].join();
 	th[2].join();
+	th[3].join();
 	mthread.join();
 
 	return 0;
