@@ -115,7 +115,7 @@ void elevator(){
 				}
 				mtx_havePeople.unlock();mtx_destination.unlock();
 
-				std::this_thread::sleep_for(std::chrono::seconds(3));
+				std::this_thread::sleep_for(std::chrono::seconds(1));
 				nowFloor++;
 			}
 			upOrDown=false;
@@ -136,9 +136,11 @@ void elevator(){
 				}
 				mtx_havePeople.unlock();mtx_destination.unlock();
 
-				std::this_thread::sleep_for(std::chrono::seconds(3));
+				std::this_thread::sleep_for(std::chrono::seconds(1));
 				nowFloor--;
 			}
+			upOrDown=true;
+			nowFloor+=1;
 		}
 	}
 	std::cout<<"elevator end\n";
