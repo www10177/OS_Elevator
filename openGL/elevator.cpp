@@ -1,6 +1,6 @@
 #include "elevator.h"
 elevator::elevator(){
-	position = Vec3(0,0,0);
+	position = Vec3(0,0,1);
 	chromaKey = Vec3(255,255,255);
 	static char elevatorLocation[]  = "image/elevator.bmp";
 	RGBpixmapController controller;
@@ -14,5 +14,5 @@ elevator::elevator(Vec3 pos){
 	nowPixmap = controller.getRGBpixmap(elevatorLocation, chromaKey);
 }
 void elevator::display(){
-	nowPixmap -> blendTex(position.x, position.y, position.z);
+	nowPixmap -> blendTex(position.x, position.y, 1);
 }

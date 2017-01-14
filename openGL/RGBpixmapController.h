@@ -13,7 +13,7 @@
 #include <vector>
 #include <map>
 #include "RGBpixmap.h"
-#include "Vec3.h"
+#include "Vec.h"
 
 using namespace std;
 

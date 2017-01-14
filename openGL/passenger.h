@@ -1,16 +1,16 @@
-#ifndef ELEVATOR_H
-#define ELEVATOR_H
+#ifndef PASSENGER_H
+#define PASSENGER_H 
+#endif
 #include "Vec.h"
 #include "RGBpixmapController.h"
 
-class elevator{
+class passenger{
 	private:
 	Vec3 chromaKey;
     RGBApixmap * nowPixmap;
 	public:
-	elevator();
-	elevator(Vec3 pos);
+	passenger();
+	passenger(Vec3);
     Vec3 position;
 	void display();
 };
-#endif

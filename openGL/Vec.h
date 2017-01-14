@@ -18,5 +18,12 @@ public :
     Vec3(double xx, double yy = 0, double zz = 0);
     double x, y, z;
 };
+class Vec4
+{
+public :
+    Vec4();
+    Vec4(double ww,double xx, double yy = 0, double zz = 0);
+    double w, x, y, z;
+};
 
 #endif /* defined(___D_Game_Programming_Tutorial__Vec3__) */

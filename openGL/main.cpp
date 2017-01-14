@@ -17,7 +17,8 @@
 #include <vector>
 #include "Timer.h"
 #include "elevator.h"
-#include "Vec3.h"
+#include "Vec.h"
+#include "passenger.h"
 #define NumberOfFloors 8 
 
 /*CONFIGS*/
@@ -29,6 +30,7 @@ const float floorColor2[3] = {228.0/255,219.0/255,141.0/255};
 
 /*VARIABLES*/
 elevator* ele; 
+passenger* passengers;
 
 /*FUNCTIONS*/
 void myDisplay();
@@ -52,6 +54,7 @@ int main(int argc, char **argv) {
 void myDisplay(void) {/*{{{*/
 	glClear(GL_COLOR_BUFFER_BIT);
 	drawFloor();
+	passengers->display();
 	ele->display();
 	glutSwapBuffers();
 }/*}}}*/
@@ -79,8 +82,9 @@ void init() {/*{{{*/
 	glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
 
 	/*Var Init*/
-	ele = new elevator(Vec3(screenWidth/2,0,0));
-	cout << "Position : " << ele->position.x << " " << ele->position.y << std::endl;
+//	ele = new elevator();
+	ele = new elevator(Vec3(screenWidth/2,0,1));
+	passengers= new passenger();
 }/*}}}*/
 
 void myReshape(int w, int h) {/*{{{*/

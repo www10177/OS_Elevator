@@ -1,5 +1,5 @@
 # Define a macro for the object files 
-OBJECTS= main.o RGBpixmap.o  KeyEventController.o  RGBpixmapController.o Timer.o elevator.o Vec3.o
+OBJECTS= main.o RGBpixmap.o  KeyEventController.o  RGBpixmapController.o Timer.o elevator.o Vec.o passenger.o
 
 # Define a macro for the library file 
 LIBES= -framework GLUT -framework OpenGL
