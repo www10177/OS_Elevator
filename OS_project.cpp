@@ -4,6 +4,10 @@
 #include <condition_variable>    // std::condition_variable
 #include <string>
 #include <chrono>
+#include <vector>
+#include <random>
+#include <stdlib.h>
+#include <time.h>
 #define NumberOfFloors 10
 
 std::mutex mtx_havePeople;
@@ -21,16 +25,18 @@ bool havePeople_down[NumberOfFloors];
 bool destination_down[NumberOfFloors];
 bool upOrDown=true;//Up:true Down:false
 int nowFloor=1;
+int peopleNum=0;
 
-std::thread th[3];
+std::vector<std::thread> passengerThreads;;
+//std::thread th[3];
 
-void passenger(int startFloor,int endFloor,std::string name){
-
+void passenger(int startFloor,int endFloor){
+//	peopleNum++;
 	if(startFloor<endFloor){
 
 		mtx_havePeople.lock();
 		havePeople_up[startFloor-1]=true;
-		std::cout<<name<<" at "<<startFloor<<" and wait elevator"<<std::endl;
+		std::cout<<"["<<std::this_thread::get_id()<<"] at "<<startFloor<<" waiting for elevator and wanna gotta "<<endFloor<<std::endl;
 		mtx_havePeople.unlock();
 
 		std::unique_lock <std::mutex> lck(mtx_floor);
@@ -38,19 +44,19 @@ void passenger(int startFloor,int endFloor,std::string name){
 
 		mtx_destination.lock();
 		destination_up[endFloor-1]=true;
-		std::cout<<name<<" in and want go to "<<endFloor<<std::endl;
+		std::cout<<"["<<std::this_thread::get_id()<<"] in and want go to "<<endFloor<<std::endl;
 		mtx_destination.unlock();
 
 		if(nowFloor!=endFloor){
 			cvFloorOut_up[endFloor-1].wait(lck);
 		}
-		std::cout<<name<<" out!"<<std::endl;
+		std::cout<<"["<<std::this_thread::get_id()<<"] out!"<<std::endl;
 	}
 	else{
 
 		mtx_havePeople.lock();
 		havePeople_down[startFloor-1]=true;
-		std::cout<<name<<" at "<<startFloor<<" and wait elevator"<<std::endl;
+		std::cout<<"["<<std::this_thread::get_id()<<"] at "<<startFloor<<" and wait elevator"<<std::endl;
 		mtx_havePeople.unlock();
 
 		std::unique_lock <std::mutex> lck(mtx_floor);
@@ -58,60 +64,81 @@ void passenger(int startFloor,int endFloor,std::string name){
 
 		mtx_destination.lock();
 		destination_down[endFloor-1]=true;
-		std::cout<<name<<" in and want go to "<<endFloor<<std::endl;
+		std::cout<<"["<<std::this_thread::get_id()<<"] in and want go to "<<endFloor<<std::endl;
 		mtx_destination.unlock();
 
 		if(nowFloor!=endFloor){
 			cvFloorOut_down[endFloor-1].wait(lck);
 		}
-		std::cout<<name<<" out!"<<std::endl;
+		std::cout<<"["<<std::this_thread::get_id()<<"] out!"<<std::endl;
 	}
+	peopleNum--;
 }
 void the(){
-	th[0]=std::thread(passenger,1,2,"kkk");
-	th[1]=std::thread(passenger,3,4,"hhh");
-	th[2]=std::thread(passenger,6,3,"sss");
+	unsigned seed;
+	seed=(unsigned)time(NULL);
+	std::default_random_engine generator(seed);
+	std::poisson_distribution<int> distribution(5);
+
+//	for(int i = 0;i<3;i++){
+	while(1){	
+		peopleNum++;
+		int startFloor=0;
+		int endFloor=0;
+		int time;
+		while(startFloor>10 || startFloor==0){	
+			startFloor = distribution(generator);
+		}
+		while(endFloor>10 || endFloor==0 || endFloor==startFloor){
+			endFloor = distribution(generator);
+		}
+		time = distribution(generator);
+		std::this_thread::sleep_for(std::chrono::seconds(time));
+		passengerThreads.push_back(std::thread(passenger,startFloor,endFloor));
+	}
 }
 void elevator(){
 	std::this_thread::sleep_for(std::chrono::seconds(1));
 	int i;
-	if(upOrDown==true){
-		for(i=0;i<NumberOfFloors;i++){
-			std::cout<<"elevator: "<<nowFloor<<std::endl;
+	while(peopleNum!=0){
+		if(upOrDown==true){
+			for(i=0;i<NumberOfFloors;i++){
+				std::cout<<"elevator: "<<nowFloor<<std::endl;
 
-			mtx_havePeople.lock();mtx_destination.lock();
-			if(havePeople_up[nowFloor-1]==true || destination_up[nowFloor-1]==true){
-				cvFloorOut_up[nowFloor-1].notify_all();
-				cvFloorIn_up[nowFloor-1].notify_all();
-				havePeople_up[nowFloor-1]=false;
-				destination_up[nowFloor-1]=false;
-				std::cout<<"open door!"<<std::endl;
+				mtx_havePeople.lock();mtx_destination.lock();
+				if(havePeople_up[nowFloor-1]==true || destination_up[nowFloor-1]==true){
+					cvFloorOut_up[nowFloor-1].notify_all();
+					cvFloorIn_up[nowFloor-1].notify_all();
+					havePeople_up[nowFloor-1]=false;
+					destination_up[nowFloor-1]=false;
+					std::cout<<"open door!"<<std::endl;
+				}
+				mtx_havePeople.unlock();mtx_destination.unlock();
+
+				std::this_thread::sleep_for(std::chrono::seconds(3));
+				nowFloor++;
 			}
-			mtx_havePeople.unlock();mtx_destination.unlock();
-
-			std::this_thread::sleep_for(std::chrono::seconds(2));
-			nowFloor++;
+			upOrDown=false;
+			nowFloor-=1;
 		}
-		upOrDown=false;
-		nowFloor-=1;
-	}
 
-	if(upOrDown==false){
-		for(i=0;i<NumberOfFloors;i++){
-			std::cout<<"elevator: "<<nowFloor<<std::endl;
+		if(upOrDown==false){
+			for(i=0;i<NumberOfFloors;i++){
+				std::cout<<"elevator: "<<nowFloor<<std::endl;
 
-			mtx_havePeople.lock();mtx_destination.lock();
-			if(havePeople_down[nowFloor-1]==true || destination_down[nowFloor-1]==true){
-				cvFloorOut_down[nowFloor-1].notify_all();
-				cvFloorIn_down[nowFloor-1].notify_all();
-				havePeople_down[nowFloor-1]=false;
-				destination_down[nowFloor-1]=false;
-				std::cout<<"open door!"<<std::endl;
+				mtx_havePeople.lock();mtx_destination.lock();
+				if(havePeople_down[nowFloor-1]==true || destination_down[nowFloor-1]==true){
+					cvFloorOut_down[nowFloor-1].notify_all();
+					cvFloorIn_down[nowFloor-1].notify_all();
+					havePeople_down[nowFloor-1]=false;
+					destination_down[nowFloor-1]=false;
+					std::cout<<"open door!"<<std::endl;
+				}
+				mtx_havePeople.unlock();mtx_destination.unlock();
+
+				std::this_thread::sleep_for(std::chrono::seconds(3));
+				nowFloor--;
 			}
-			mtx_havePeople.unlock();mtx_destination.unlock();
-
-			std::this_thread::sleep_for(std::chrono::seconds(2));
-			nowFloor--;
 		}
 	}
 	std::cout<<"elevator end\n";
@@ -128,9 +155,11 @@ int main(){
 
 	std::thread mthread(elevator);
 	the();
-	th[0].join();
-	th[1].join();
-	th[2].join();
+
+	for(k = 0;k<passengerThreads.size();k++){
+		passengerThreads[k].join();
+	}
+
 	mthread.join();
 
 	return 0;
