@@ -6,9 +6,11 @@
 #include <chrono>
 #include <vector>
 #include <random>
+#include <unistd.h>
 #include <stdlib.h>
 #include <time.h>
-#define NumberOfFloors 10
+#define NumberOfFloors 8
+#define Time_TIMES_NUM 100000
 
 std::mutex mtx_havePeople;
 std::mutex mtx_destination;
@@ -31,7 +33,6 @@ int peopleNum=0;
 int nowDataPlace=0;
 bool elevatorIsAwake=false;
 std::vector<std::thread> passengerThreads;;
-//std::thread th[3];
 
 class Data{
 	public:
@@ -44,12 +45,6 @@ class Data{
 };
 std::vector<Data> dataVector;
 void passenger(int startFloor,int endFloor){
-	/*	public int sF=startFloor;
-		public int eF=endFloor;
-		public bool isGoingUp;
-		public bool isIn=false;
-		public bool isOut=false;
-		*/	
 	bool isGoingUp;
 	int dataVectorPlace=0;
 	if(startFloor<endFloor)
@@ -68,7 +63,7 @@ void passenger(int startFloor,int endFloor){
 	if(isGoingUp){
 		mtx_havePeople.lock();
 		havePeople_up[startFloor-1]=true;
-		std::cout<<"["<<std::this_thread::get_id()<<"] at "<<startFloor<<" to "<<endFloor<<std::endl;
+		std::cout<<"["<<std::this_thread::get_id()<<"] at "<<startFloor<<" to "<<endFloor<<std::endl;  //when born
 		mtx_havePeople.unlock();
 
 		std::unique_lock <std::mutex> lck(mtx_floor);
@@ -76,20 +71,20 @@ void passenger(int startFloor,int endFloor){
 
 		mtx_destination.lock();
 		destination_up[endFloor-1]=true;
-		std::cout<<"["<<std::this_thread::get_id()<<"] INNNNN!!!! from "<<startFloor<<" to "<<endFloor<<std::endl;
+		std::cout<<"["<<std::this_thread::get_id()<<"] INNNNN!!!! from "<<startFloor<<" to "<<endFloor<<std::endl;  //when in
 		dataVector[dataVectorPlace].isIn=true;
 		mtx_destination.unlock();
 
 		if(nowFloor!=endFloor){
 			cvFloorOut_up[endFloor-1].wait(lck);
 		}
-		std::cout<<"["<<std::this_thread::get_id()<<"] out! from "<<startFloor<<" to "<<endFloor<<std::endl;
+		std::cout<<"["<<std::this_thread::get_id()<<"] out! from "<<startFloor<<" to "<<endFloor<<std::endl; //when out
 		dataVector[dataVectorPlace].isOut=true;
 	}
 	else{
 		mtx_havePeople.lock();
 		havePeople_down[startFloor-1]=true;
-		std::cout<<"["<<std::this_thread::get_id()<<"] at "<<startFloor<<" to "<<endFloor<<std::endl;
+		std::cout<<"["<<std::this_thread::get_id()<<"] at "<<startFloor<<" to "<<endFloor<<std::endl; //when born
 		mtx_havePeople.unlock();
 
 		std::unique_lock <std::mutex> lck(mtx_floor);
@@ -97,14 +92,14 @@ void passenger(int startFloor,int endFloor){
 
 		mtx_destination.lock();
 		destination_down[endFloor-1]=true;
-		std::cout<<"["<<std::this_thread::get_id()<<"] INNNNN!!!! from "<<startFloor<<" to "<<endFloor<<std::endl;
+		std::cout<<"["<<std::this_thread::get_id()<<"] INNNNN!!!! from "<<startFloor<<" to "<<endFloor<<std::endl; //when in
 		dataVector[dataVectorPlace].isIn=true;
 		mtx_destination.unlock();
 
 		if(nowFloor!=endFloor){
 			cvFloorOut_down[endFloor-1].wait(lck);
 		}
-		std::cout<<"["<<std::this_thread::get_id()<<"] out! from "<<startFloor<<" to "<<endFloor<<std::endl;
+		std::cout<<"["<<std::this_thread::get_id()<<"] out! from "<<startFloor<<" to "<<endFloor<<std::endl; //when out
 		dataVector[dataVectorPlace].isOut=true;
 	}
 	dataVector[dataVectorPlace].isDone=true;
@@ -119,22 +114,20 @@ void the(){
 	std::default_random_engine generator(seed);
 	std::poisson_distribution<int> distribution(5);
 
-	//	for(int i = 0;i<3;i++){
 	while(1){	
 		peopleNum++;
 		int startFloor=0;
 		int endFloor=0;
 		int time;
-		while(startFloor>10 || startFloor==0){	
+		while(startFloor>NumberOfFloors || startFloor==0){	
 			startFloor = distribution(generator);
 		}
-		while(endFloor>10 || endFloor==0 || endFloor==startFloor){
+		while(endFloor>NumberOfFloors || endFloor==0 || endFloor==startFloor){
 			endFloor = distribution(generator);
 		}
 		time = distribution(generator);
-		std::this_thread::sleep_for(std::chrono::seconds(time));
+		usleep(time*Time_TIMES_NUM);
 		passengerThreads.push_back(std::thread(passenger,startFloor,endFloor));
-		//		cvElevatorIsAwake.notify_all();
 		elevatorIsAwake=true;
 	}
 }
@@ -159,7 +152,6 @@ int stairSelect(){
 			else if(!dataVector[i].isIn){
 				dataVector[i].isIn=true;
 				nowDataPlace=i;
-				std::cout<<"start "<<dataVector[i].startFloor<<std::endl;
 				if(dataVector[i].startFloor<nowFloor){
 					dataVector[i].isGoingUp=true;
 				}               
@@ -175,11 +167,10 @@ int stairSelect(){
 
 void elevator(){
 	while(!elevatorIsAwake){
-		std::this_thread::sleep_for(std::chrono::seconds(1));
+		usleep(1*Time_TIMES_NUM);
 		std::cout<<"Elevator Sleeping"<<std::endl;
 	}
 	std::cout<<"Elevator Awaken"<<std::endl;
-	//	cvElevatorIsAwake.wait();)
 	int i;
 	while(peopleNum!=0){
 		int targetFloor;
@@ -214,7 +205,7 @@ void elevator(){
 					}
 					mtx_havePeople.unlock();mtx_destination.unlock();
 
-					std::this_thread::sleep_for(std::chrono::seconds(3));
+					usleep(3*Time_TIMES_NUM);
 					nowFloor++;
 				}
 				nowFloor--;
@@ -241,7 +232,7 @@ void elevator(){
 					}
 					mtx_havePeople.unlock();mtx_destination.unlock();
 
-					std::this_thread::sleep_for(std::chrono::seconds(3));
+					usleep(3*Time_TIMES_NUM);
 					nowFloor--;
 				}
 				nowFloor++;
