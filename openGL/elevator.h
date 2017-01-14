@@ -10,6 +10,7 @@ class elevator{
     RGBApixmap * nowPixmap;
 	public:
 	elevator();
+	elevator(Vec3 pos);
     Vec3 position;
 	void display();
 };
