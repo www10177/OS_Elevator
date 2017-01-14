@@ -13,11 +13,10 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp \
-    eleCLI.cpp
+        mainwindow.cpp
 
 HEADERS  += mainwindow.h \
-    eleCLI.h
+    cliPara.h
 
 FORMS    += mainwindow.ui
 

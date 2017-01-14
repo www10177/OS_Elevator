@@ -1,14 +1,13 @@
-#ifndef ELEVATORTHREAD_H
-#define ELEVATORTHREAD_H
+#ifndef CLIPARA_H
+#define CLIPARA_H
 #include <iostream>                // std::cout
 #include <thread>                // std::thread
 #include <mutex>                // std::mutex, std::unique_lock
 #include <condition_variable>    // std::condition_variable
 #include <string>
 #include <chrono>
+#define  NumberOfFloors 10
 
-
-const int NumberOfFloors=10;
 
 std::mutex mtx_havePeople;
 std::mutex mtx_destination;
@@ -25,18 +24,6 @@ bool havePeople_down[NumberOfFloors];
 bool destination_down[NumberOfFloors];
 bool upOrDown=true;//Up:true Down:false
 int nowFloor=1;
-
-std::thread th[3];
-
-
-
-void passenger(int startFloor,int endFloor,std::string name);
-void the();
-void elevator();
-void init();
-
-
-
 
 
 #endif // ELEVATORTHREAD_H

@@ -14,10 +14,15 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+     void addTableItem(std::string name, int from,int to);
 
 private:
     Ui::MainWindow *ui;
     void initMainWindow();
+
+signals:
+public slots:
+
 };
 
 
