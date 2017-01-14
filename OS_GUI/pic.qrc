@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/pic/elevator">
+        <file>square.png</file>
+    </qresource>
+</RCC>
