@@ -1,11 +1,3 @@
-//
-//  main.cpp
-//  2D Game Programming Tutorial
-//
-//  Created by UglyMan.nothinglo on 13/10/7.
-//  Copyright (c) 2013年 UglyMan.nothinglo. All rights reserved.
-//
-
 #ifdef __APPLE__
 #include <GLUT/glut.h>
 #else
@@ -20,7 +12,7 @@
 #include "passenger.h"
 
 /*thread*/
-#include <iostream>                // std::cout
+#include <iostream>                // std::cout/*{{{*/
 #include <thread>                // std::thread
 #include <mutex>                // std::mutex, std::unique_lock
 #include <condition_variable>    // std::condition_variable
@@ -32,10 +24,10 @@
 #include <stdlib.h>
 #include <time.h>
 #define NumberOfFloors 8
-#define Time_TIMES_NUM 100000
+#define Time_TIMES_NUM 1000000/*}}}*/
 
-
-class Data{
+/*THREAD*/
+class Data{/*{{{*/
 	public:
 		int startFloor;
 		int endFloor;
@@ -45,7 +37,6 @@ class Data{
 		bool isOut;
 		Data();
 };
-/*THREAD*/
 std::mutex mtx_havePeople;
 std::mutex mtx_destination;
 std::mutex mtx_floor;
@@ -69,20 +60,22 @@ int peopleNum=0;
 int nowDataPlace=0;
 bool elevatorIsAwake=false;
 std::vector<std::thread> passengerThreads;;
-std::vector<Data> dataVector;
+std::vector<Data> dataVector;/*}}}*/
 
 
 /*CONFIGS*/
 const int GAME_ONE_SHOT_TIME = 33;
 int screenWidth = 800 , screenHeight = 800;
-const int floorHeight = screenHeight / NumberOfFloors;
-const float floorColor1[3] = {248.0/255,219.0/255,14.0/255};
-const float floorColor2[3] = {228.0/255,219.0/255,141.0/255};
+int floorHeight = screenHeight / NumberOfFloors;
+const float floorColor1[3] = {153.0/255,101.0/255,70.0/255};
+const float floorColor2[3] = {183.0/255,131.0/255,100.0/255};
+const float itemXLocation[2] = {200,400};
 
 /*VARIABLES*/
-elevator* ele; 
-passenger* passengers;
+elevator* mainElevator; 
+passenger* passengers[NumberOfFloors];
 thread mainThread;
+
 
 /*FUNCTIONS*/
 void myDisplay();
@@ -114,13 +107,19 @@ int main(int argc, char **argv) {
 void myDisplay(void) {/*{{{*/
 	glClear(GL_COLOR_BUFFER_BIT);
 	drawFloor();
-	passengers->display();
-	ele->display();
+	for (int i = 0; i < NumberOfFloors; ++i) {
+	passengers[i]->display();
+	}
+	mainElevator->display();
 	glutSwapBuffers();
 }/*}}}*/
 
 void updateTheGame(int value) { /*{{{*/
 	glutPostRedisplay();
+	mainElevator->update();
+	for (int i = 0; i < NumberOfFloors; ++i) {
+	passengers[i]->updateP();
+	}
 	glutTimerFunc(GAME_ONE_SHOT_TIME, updateTheGame, 0);
 }/*}}}*/
 
@@ -143,9 +142,10 @@ void init() {/*{{{*/
 
 
 	/*Var Init*/
-	//	ele = new elevator();
-	ele = new elevator(Vec3(screenWidth/2,0,1));
-	passengers= new passenger();
+	mainElevator= new elevator(Vec3(itemXLocation[0],0,1));
+	for (int i = 0; i < NumberOfFloors; ++i) {
+	passengers[i]= new passenger(Vec3(itemXLocation[1],0+i *floorHeight,1));
+	}
 }/*}}}*/
 
 void myReshape(int w, int h) {/*{{{*/
@@ -174,10 +174,10 @@ void keys(unsigned char key, int x, int y) {/*{{{*/
 
 /*Thread Functions*/
 Data::Data(){/*{{{*/
-		isDone=false;
-		isGoingUp=false;
-		isIn=false;
-		isOut=false;
+	isDone=false;
+	isGoingUp=false;
+	isIn=false;
+	isOut=false;
 }/*}}}*/
 void t_passenger(int startFloor,int endFloor){/*{{{*/
 	bool isGoingUp;
@@ -198,7 +198,8 @@ void t_passenger(int startFloor,int endFloor){/*{{{*/
 	if(isGoingUp){
 		mtx_havePeople.lock();
 		havePeople_up[startFloor-1]=true;
-		std::cout<<"["<<std::this_thread::get_id()<<"] at "<<startFloor<<" to "<<endFloor<<std::endl;  //when born
+		passengers[startFloor-1]->count++;
+		std::cout<<"BORN : ["<<std::this_thread::get_id()<<"] at "<<startFloor<<" to "<<endFloor<<std::endl;  //when born
 		mtx_havePeople.unlock();
 
 		std::unique_lock <std::mutex> lck(mtx_floor);
@@ -206,6 +207,7 @@ void t_passenger(int startFloor,int endFloor){/*{{{*/
 
 		mtx_destination.lock();
 		destination_up[endFloor-1]=true;
+		passengers[startFloor-1]->count--;
 		std::cout<<"["<<std::this_thread::get_id()<<"] INNNNN!!!! from "<<startFloor<<" to "<<endFloor<<std::endl;  //when in
 		dataVector[dataVectorPlace].isIn=true;
 		mtx_destination.unlock();
@@ -219,7 +221,8 @@ void t_passenger(int startFloor,int endFloor){/*{{{*/
 	else{
 		mtx_havePeople.lock();
 		havePeople_down[startFloor-1]=true;
-		std::cout<<"["<<std::this_thread::get_id()<<"] at "<<startFloor<<" to "<<endFloor<<std::endl; //when born
+		passengers[startFloor-1]->count++;
+		std::cout<<"BORN : ["<<std::this_thread::get_id()<<"] at "<<startFloor<<" to "<<endFloor<<std::endl; //when born
 		mtx_havePeople.unlock();
 
 		std::unique_lock <std::mutex> lck(mtx_floor);
@@ -227,6 +230,7 @@ void t_passenger(int startFloor,int endFloor){/*{{{*/
 
 		mtx_destination.lock();
 		destination_down[endFloor-1]=true;
+		passengers[startFloor-1]->count--;
 		std::cout<<"["<<std::this_thread::get_id()<<"] INNNNN!!!! from "<<startFloor<<" to "<<endFloor<<std::endl; //when in
 		dataVector[dataVectorPlace].isIn=true;
 		mtx_destination.unlock();
@@ -261,7 +265,8 @@ void generator(){/*{{{*/
 			endFloor = distribution(generator);
 		}
 		time = distribution(generator);
-		usleep(time*Time_TIMES_NUM);
+		std::this_thread::sleep_for(std::chrono::microseconds(time*Time_TIMES_NUM));
+		//usleep(time*Time_TIMES_NUM);
 		passengerThreads.push_back(std::thread(t_passenger,startFloor,endFloor));
 		elevatorIsAwake=true;
 	}
@@ -300,7 +305,8 @@ int stairSelect(){/*{{{*/
 }/*}}}*/
 void t_elevator(){/*{{{*/
 	while(!elevatorIsAwake){
-		usleep(1*Time_TIMES_NUM);
+		//usleep(1*Time_TIMES_NUM);
+		std::this_thread::sleep_for(std::chrono::microseconds(Time_TIMES_NUM));
 		std::cout<<"Elevator Sleeping"<<std::endl;
 	}
 	std::cout<<"Elevator Awaken"<<std::endl;
@@ -326,8 +332,8 @@ void t_elevator(){/*{{{*/
 			int initialFloor=nowFloor;
 			if(upOrDown==true){
 				for(i=0;i<targetFloor-initialFloor+1;i++){
-					std::cout<<"elevator: "<<nowFloor<<std::endl;
-
+					mainElevator->getPos(nowFloor,upOrDown);
+					std::cout << " elevator: "<<nowFloor<<std::endl; 
 					mtx_havePeople.lock();mtx_destination.lock();
 					if(havePeople_up[nowFloor-1]==true || destination_up[nowFloor-1]==true){
 						cvFloorOut_up[nowFloor-1].notify_all();
@@ -338,7 +344,8 @@ void t_elevator(){/*{{{*/
 					}
 					mtx_havePeople.unlock();mtx_destination.unlock();
 
-					usleep(3*Time_TIMES_NUM);
+					//usleep(3*Time_TIMES_NUM);
+					std::this_thread::sleep_for(std::chrono::microseconds(1*Time_TIMES_NUM));
 					nowFloor++;
 				}
 				nowFloor--;
@@ -353,8 +360,8 @@ void t_elevator(){/*{{{*/
 			}
 			else{
 				for(i=0;i<initialFloor-targetFloor+1;i++){
-					std::cout<<"elevator: "<<nowFloor<<std::endl;
-
+					mainElevator->getPos(nowFloor,upOrDown);
+					std::cout<< " elevator: "<<nowFloor<<std::endl; 
 					mtx_havePeople.lock();mtx_destination.lock();
 					if(havePeople_down[nowFloor-1]==true || destination_down[nowFloor-1]==true){
 						cvFloorOut_down[nowFloor-1].notify_all();
@@ -365,7 +372,8 @@ void t_elevator(){/*{{{*/
 					}
 					mtx_havePeople.unlock();mtx_destination.unlock();
 
-					usleep(3*Time_TIMES_NUM);
+					//usleep(3*Time_TIMES_NUM);
+					std::this_thread::sleep_for(std::chrono::microseconds(1*Time_TIMES_NUM));
 					nowFloor--;
 				}
 				nowFloor++;
@@ -391,7 +399,7 @@ void t_init(){/*{{{*//*{{{*/
 		destination_down[i]=false;
 	}
 
-std::thread mthread(t_elevator);
+	std::thread mthread(t_elevator);
 	generator();
 
 	for(k = 0;k<(int)passengerThreads.size();k++){
