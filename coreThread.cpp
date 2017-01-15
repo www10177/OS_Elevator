@@ -7,7 +7,7 @@ Data::Data(){/*{{{*/
 		isOut=false;
 }/*}}}*/
 
-void passenger(int startFloor,int endFloor){/*{{{*/
+void t_passenger(int startFloor,int endFloor){/*{{{*/
 	bool isGoingUp;
 	int dataVectorPlace=0;
 	if(startFloor<endFloor)
@@ -30,8 +30,12 @@ void passenger(int startFloor,int endFloor){/*{{{*/
 		mtx_havePeople.unlock();
 
 		std::unique_lock <std::mutex> lck(mtx_floor);
-		cvFloorIn_up[startFloor-1].wait(lck);
-
+		if(nowFloor==startFloor  && targetFloor<endFloor && isGoingUp!=dataVector[nowDataPlace].isGoingUp){
+			cvFloorIn_up[startFloor-1].wait(lck);
+		}
+		else if(nowFloor!=startFloor){
+			cvFloorIn_up[startFloor-1].wait(lck);
+		}
 		mtx_destination.lock();
 		destination_up[endFloor-1]=true;
 		std::cout<<"["<<std::this_thread::get_id()<<"] INNNNN!!!! from "<<startFloor<<" to "<<endFloor<<std::endl;  //when in
@@ -51,7 +55,13 @@ void passenger(int startFloor,int endFloor){/*{{{*/
 		mtx_havePeople.unlock();
 
 		std::unique_lock <std::mutex> lck(mtx_floor);
-		cvFloorIn_down[startFloor-1].wait(lck);
+	
+		if(nowFloor==startFloor && targetFloor>startFloor && isGoingUp != dataVector[nowDataPlace].isGoingUp){
+			cvFloorIn_down[startFloor-1].wait(lck);
+		}
+		else if(nowFloor!=startFloor){
+			cvFloorIn_down[startFloor-1].wait(lck);
+		}
 
 		mtx_destination.lock();
 		destination_down[endFloor-1]=true;
@@ -97,6 +107,16 @@ void generator(){/*{{{*/
 }/*}}}*/
 
 int stairSelect(){/*{{{*/
+	for(int i = 0;i<dataVector.size()-1;i++){
+		for(int j = 0;j<dataVector.size()-i-1;j++){
+			if(!dataVector[i].isIn && dataVector[j].isIn){
+				Data tempData;
+				tempData = dataVector[i];
+				dataVector[i] = dataVector[j];
+				dataVector[j] = tempData;
+			}
+		}
+	}
 	for(int i = 0;i<dataVector.size();i++){
 		if(dataVector[i].isDone){
 			continue;
@@ -105,23 +125,11 @@ int stairSelect(){/*{{{*/
 			if(dataVector[i].isIn && !dataVector[i].isOut){
 				dataVector[i].isOut=true;
 				nowDataPlace=i;
-				if(dataVector[i].endFloor<nowFloor){
-					dataVector[i].isGoingUp=true;
-				}
-				else{
-					dataVector[i].isGoingUp=false;
-				}
 				return dataVector[i].endFloor;
 			}
 			else if(!dataVector[i].isIn){
 				dataVector[i].isIn=true;
 				nowDataPlace=i;
-				if(dataVector[i].startFloor<nowFloor){
-					dataVector[i].isGoingUp=true;
-				}               
-				else{           
-					dataVector[i].isGoingUp=false;
-				}
 				return dataVector[i].startFloor;
 			}
 		}
@@ -129,7 +137,7 @@ int stairSelect(){/*{{{*/
 	return 0;
 }/*}}}*/
 
-void elevator(){/*{{{*/
+void t_elevator(){/*{{{*/
 	while(!elevatorIsAwake){
 		usleep(1*Time_TIMES_NUM);
 		std::cout<<"Elevator Sleeping"<<std::endl;
@@ -214,7 +222,7 @@ void elevator(){/*{{{*/
 	std::cout<<"elevator end\n";
 }/*}}}*/
 
-void init(){/*{{{*/
+void t_init(){/*{{{*/
 	int i,k;
 	for(i=0;i<10;i++){
 		havePeople_up[i]=false;
@@ -223,7 +231,7 @@ void init(){/*{{{*/
 		destination_down[i]=false;
 	}
 
-	std::thread mthread(elevator);
+	std::thread mthread(t_elevator);
 	generator();
 
 	for(k = 0;k<(int)passengerThreads.size();k++){

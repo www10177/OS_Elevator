@@ -43,16 +43,16 @@ class Data{
 		int startFloor;
 		int endFloor;
 		bool isDone;
-		bool isGoingUp;
+		bool upOrDown;
 		bool isIn;
 		bool isOut;
 		Data();
 };
-void passenger(int start, int end);
+void t_passenger(int start, int end);
 void generator();
 int stairSelect();
-void elevator();
-void init();
+void t_elevator();
+void t_init();
 
 
 #endif
