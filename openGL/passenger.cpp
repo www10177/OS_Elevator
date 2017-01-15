@@ -14,6 +14,5 @@ passenger::passenger(Vec3 pos){
 	nowPixmap = controller.getRGBpixmap(passengerLocation, chromaKey);
 }
 void passenger::display(){
-	std::cout << position.x<<std::endl;
 	nowPixmap -> blendTex(position.x, position.y, 1);
 }
