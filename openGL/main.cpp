@@ -69,7 +69,7 @@ int screenWidth = 800 , screenHeight = 800;
 int floorHeight = screenHeight / NumberOfFloors;
 const float floorColor1[3] = {153.0/255,101.0/255,70.0/255};
 const float floorColor2[3] = {183.0/255,131.0/255,100.0/255};
-const float itemXLocation[2] = {200,400};
+float itemXLocation[2] = {200,400};
 
 /*VARIABLES*/
 elevator* mainElevator; 
@@ -144,7 +144,7 @@ void init() {/*{{{*/
 	/*Var Init*/
 	mainElevator= new elevator(Vec3(itemXLocation[0],0,1));
 	for (int i = 0; i < NumberOfFloors; ++i) {
-	passengers[i]= new passenger(Vec3(itemXLocation[1],0+i *floorHeight,1));
+	passengers[i]= new passenger(Vec3(itemXLocation[1],10+i *floorHeight,1));
 	}
 }/*}}}*/
 
@@ -207,7 +207,7 @@ void t_passenger(int startFloor,int endFloor){/*{{{*/
 
 		mtx_destination.lock();
 		destination_up[endFloor-1]=true;
-		passengers[startFloor-1]->count--;
+		passengers[startFloor-1]->setIO(1);
 		std::cout<<"["<<std::this_thread::get_id()<<"] INNNNN!!!! from "<<startFloor<<" to "<<endFloor<<std::endl;  //when in
 		dataVector[dataVectorPlace].isIn=true;
 		mtx_destination.unlock();
@@ -230,7 +230,7 @@ void t_passenger(int startFloor,int endFloor){/*{{{*/
 
 		mtx_destination.lock();
 		destination_down[endFloor-1]=true;
-		passengers[startFloor-1]->count--;
+		passengers[startFloor-1]->setIO(1);
 		std::cout<<"["<<std::this_thread::get_id()<<"] INNNNN!!!! from "<<startFloor<<" to "<<endFloor<<std::endl; //when in
 		dataVector[dataVectorPlace].isIn=true;
 		mtx_destination.unlock();
@@ -251,7 +251,7 @@ void generator(){/*{{{*/
 	unsigned seed;
 	seed=(unsigned)time(NULL);
 	std::default_random_engine generator(seed);
-	std::poisson_distribution<int> distribution(5);
+	std::poisson_distribution<int> distribution(3);
 
 	while(1){	
 		peopleNum++;

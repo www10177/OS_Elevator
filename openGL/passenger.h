@@ -4,13 +4,18 @@
 #include "Vec.h"
 #include "RGBpixmapController.h"
 extern int screenHeight;
+extern float itemXLocation[2]	; 
 class passenger{
 	private:
 		bool visible;
 		Vec3 chromaKey;
 		RGBApixmap * nowPixmap;
+		RGBApixmap * movePixmap;
+		int io;
+		float speed;
 
 	public:
+		float movPosX;
 		int count;
 		bool goIn;
 		bool goOut;
