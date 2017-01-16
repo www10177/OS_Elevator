@@ -7,9 +7,10 @@ elevator::elevator(Vec3 pos){
 	static char elevatorLocation[]  = "image/elevator.bmp";
 	RGBpixmapController controller;
 	nowPixmap = controller.getRGBpixmap(elevatorLocation, chromaKey);
-	static char passengerLocation[]  = "image/passenger.bmp";
-	RGBpixmapController controller2;
-	movePixmap= controller.getRGBpixmap(passengerLocation, chromaKey);
+	static char passengerLocationG[]  = "image/passengerG.bmp";
+	static char passengerLocationR[]  = "image/passengerR.bmp";
+	movePixmap[0]= controller.getRGBpixmap(passengerLocationG, chromaKey);
+	movePixmap[1]= controller.getRGBpixmap(passengerLocationR, chromaKey);
 }
 void elevator::getPos(int nowFloor, bool upOrDown){
 	this->nowFloor = nowFloor;
@@ -23,11 +24,16 @@ void elevator::update(){
 	position.y = (nowFloor-1)*floorHeight;
 }
 void elevator::display(){
-	if(passOut)
-		movePixmap->blendTex(movPosX,position.y,1);
+	if(passOut){
+		if(isUp)
+		movePixmap[0]->blendTex(movPosX,position.y,1);
+		else
+		movePixmap[1]->blendTex(movPosX,position.y,1);
+	}
 	nowPixmap-> blendTex(position.x, position.y, 1);
 }
-void elevator::passengerOut(){
+void elevator::passengerOut(bool Up){
 	passOut = true;		
+	isUp = Up;
 	movPosX = position.x;
 }

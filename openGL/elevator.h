@@ -9,9 +9,10 @@ class elevator{
 	private:
 		Vec3 chromaKey;
 		RGBApixmap * nowPixmap;
-		RGBApixmap * movePixmap;
+		RGBApixmap * movePixmap[2];
 		float speedPass ;
 		float movPosX;
+		bool isUp;
 	public:
 		bool passOut;
 		bool upOrDown;
@@ -22,6 +23,6 @@ class elevator{
 		void getPos(int nowFloor, bool upOrDown);
 		void update();
 		void display();
-		void passengerOut();
+		void passengerOut(bool Up);
 };
 #endif
