@@ -144,7 +144,7 @@ void init() {/*{{{*/
 	/*Var Init*/
 	mainElevator= new elevator(Vec3(itemXLocation[0],0,1));
 	for (int i = 0; i < NumberOfFloors; ++i) {
-	passengers[i]= new passenger(Vec3(itemXLocation[1],10+i *floorHeight,1));
+	passengers[i]= new passenger(Vec3(itemXLocation[1],0+i *floorHeight,1));
 	}
 }/*}}}*/
 
@@ -215,6 +215,7 @@ void t_passenger(int startFloor,int endFloor){/*{{{*/
 		if(nowFloor!=endFloor){
 			cvFloorOut_up[endFloor-1].wait(lck);
 		}
+		mainElevator ->passengerOut();
 		std::cout<<"["<<std::this_thread::get_id()<<"] out! from "<<startFloor<<" to "<<endFloor<<std::endl; //when out
 		dataVector[dataVectorPlace].isOut=true;
 	}
@@ -238,6 +239,7 @@ void t_passenger(int startFloor,int endFloor){/*{{{*/
 		if(nowFloor!=endFloor){
 			cvFloorOut_down[endFloor-1].wait(lck);
 		}
+		mainElevator ->passengerOut();
 		std::cout<<"["<<std::this_thread::get_id()<<"] out! from "<<startFloor<<" to "<<endFloor<<std::endl; //when out
 		dataVector[dataVectorPlace].isOut=true;
 	}

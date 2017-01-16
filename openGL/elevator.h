@@ -7,17 +7,21 @@ extern int floorHeight;
 
 class elevator{
 	private:
-	Vec3 chromaKey;
-    RGBApixmap * nowPixmap;
-	float speed ;
+		Vec3 chromaKey;
+		RGBApixmap * nowPixmap;
+		RGBApixmap * movePixmap;
+		float speedPass ;
+		float movPosX;
 	public:
-	bool upOrDown;
-	int nowFloor;
-	elevator();
-	elevator(Vec3 pos);
-    Vec3 position;
-	void getPos(int nowFloor, bool upOrDown);
-	void update();
-	void display();
+		bool passOut;
+		bool upOrDown;
+		int nowFloor;
+		elevator();
+		elevator(Vec3 pos);
+		Vec3 position;
+		void getPos(int nowFloor, bool upOrDown);
+		void update();
+		void display();
+		void passengerOut();
 };
 #endif
