@@ -33,13 +33,11 @@ class Data{/*{{{*/
 std::mutex mtx_havePeople;
 std::mutex mtx_destination;
 std::mutex mtx_floor;
-std::mutex mtx_Elevator;
 
 std::condition_variable cvFloorIn_up[NumberOfFloors];
 std::condition_variable cvFloorOut_up[NumberOfFloors];
 std::condition_variable cvFloorIn_down[NumberOfFloors];
 std::condition_variable cvFloorOut_down[NumberOfFloors];
-std::condition_variable cvElevatorIsAwake;
 
 std::thread m_thread;
 
